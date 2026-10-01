@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # RaipurNetra AI — "The Intelligent Eye of Raipur"
 
 AI-Powered Intelligent Traffic Management System for the **Raipur Police Commissionerate**
@@ -158,3 +159,6 @@ Ultralytics YOLOv8 (fine-tuned) · OpenCV (MOG2 tracking) · GradientBoosting (s
 | 3 — Full Intel | 50 junctions | Digital twin, TrafficGPT, auto reports, full analytics |
 
 **Cost:** ₹4.25 lakh one-time + ₹13k/month · **Revenue:** ₹17.5 lakh/month (self-sustaining, ROI in week 1)
+=======
+# raipur_netra
+>>>>>>> 85dde938d7b5f16c42bfd0eb88c5a386f9051e9c
