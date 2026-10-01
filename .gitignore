@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+data/uploads/*
+!data/uploads/.gitkeep
+reports/
+models/congestion/
+models/yolo_raipur_best.pt
+node_modules/
+.DS_Store

@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RaipurNetra on WhatsApp — Simulator</title>
+<style>
+  :root { --wa-bg: #0b141a; --wa-panel: #111b21; --wa-head: #202c33; --wa-out: #005c4b; --wa-in: #202c33; --wa-accent: #00a884; --text: #e9edef; --muted: #8696a0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: "Segoe UI", system-ui, sans-serif; }
+  body { background: #0c1317; color: var(--text); height: 100vh; display: flex; align-items: center; justify-content: center; }
+  .phone { width: 420px; max-width: 100vw; height: 92vh; background: var(--wa-bg); border-radius: 18px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 20px 60px rgba(0,0,0,.6); border: 1px solid #222d34; }
+  .head { background: var(--wa-head); padding: 10px 14px; display: flex; gap: 10px; align-items: center; }
+  .avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--wa-accent); color: #04231c; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+  .head .name { font-weight: 600; font-size: 15px; }
+  .head .status { font-size: 12px; color: var(--muted); }
+  .chat { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 6px;
+          background-image: radial-gradient(rgba(255,255,255,.03) 1px, transparent 1px); background-size: 22px 22px; }
+  .msg { max-width: 80%; padding: 7px 10px; border-radius: 9px; font-size: 13.5px; line-height: 1.45; white-space: pre-wrap; }
+  .msg.in { align-self: flex-start; background: var(--wa-in); border-top-left-radius: 2px; }
+  .msg.out { align-self: flex-end; background: var(--wa-out); border-top-right-radius: 2px; }
+  .msg .t { display: block; font-size: 10px; color: var(--muted); text-align: right; margin-top: 2px; }
+  .note { background: #182229; color: var(--muted); font-size: 11.5px; padding: 8px 12px; margin: 4px 14px; border-radius: 8px; }
+  .bar { display: flex; gap: 8px; padding: 10px; background: var(--wa-head); }
+  .bar input { flex: 1; background: #2a3942; border: none; border-radius: 20px; color: var(--text); padding: 10px 14px; font-size: 13.5px; outline: none; }
+  .bar button { width: 42px; height: 42px; border-radius: 50%; border: none; background: var(--wa-accent); color: #04231c; font-size: 17px; cursor: pointer; }
+  .quick { display: flex; gap: 6px; flex-wrap: wrap; padding: 0 10px 8px; background: var(--wa-head); }
+  .quick button { background: #2a3942; color: var(--text); border: none; border-radius: 14px; padding: 5px 10px; font-size: 11.5px; cursor: pointer; }
+  .tag { position: fixed; bottom: 8px; right: 12px; font-size: 11px; color: #465863; }
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="head">
+    <div class="avatar">R</div>
+    <div>
+      <div class="name">RaipurNetra Traffic Bot</div>
+      <div class="status" id="status">online · WhatsApp Cloud API webhook</div>
+    </div>
+  </div>
+  <div class="note">This page talks through the <b>same webhook pipeline</b> as production WhatsApp
+  (<code>/api/whatsapp/webhook</code> → TrafficGPT → reply). Connect a real number with a Meta App token —
+  zero bot-code changes needed.</div>
+  <div class="chat" id="chat"></div>
+  <div class="quick" id="quick"></div>
+  <div class="bar">
+    <input id="msg" placeholder="Type a message in Hindi or English…">
+    <button id="send">➤</button>
+  </div>
+</div>
+<div class="tag">RaipurNetra AI · WhatsApp Gateway demo</div>
+<script>
+const chat = document.getElementById("chat");
+const quickBox = document.getElementById("quick");
+function time() { return new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }); }
+function bubble(text, out) {
+  const d = document.createElement("div");
+  d.className = "msg " + (out ? "out" : "in");
+  d.textContent = text;
+  const t = document.createElement("span"); t.className = "t"; t.textContent = time();
+  d.appendChild(t); chat.appendChild(d); chat.scrollTop = chat.scrollHeight;
+}
+async function send(text) {
+  text = (text || document.getElementById("msg").value).trim();
+  if (!text) return;
+  document.getElementById("msg").value = "";
+  bubble(text, true);
+  try {
+    const r = await fetch("/api/whatsapp/simulate", { method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sender: "9198xxxxxxxx", text }) });
+    const data = await r.json();
+    setTimeout(() => bubble(data.reply, false), 350);
+  } catch (e) { bubble("⚠ Gateway error: " + e.message, false); }
+}
+const QUICK = ["Jaistambh traffic kaisa hai?", "Bus 7 kab aayegi?", "Magneto Mall parking?",
+  "Fastest route from Jaistambh to Telibandha", "Aaj ke challan stats", "नमस्ते"];
+QUICK.forEach(q => {
+  const b = document.createElement("button"); b.textContent = q;
+  b.onclick = () => send(q); quickBox.appendChild(b);
+});
+document.getElementById("send").onclick = () => send();
+document.getElementById("msg").addEventListener("keydown", e => { if (e.key === "Enter") send(); });
+fetch("/api/whatsapp/status").then(r => r.json()).then(s => {
+  document.getElementById("status").textContent = s.configured
+    ? "LIVE — Graph API token configured"
+    : "online · simulator mode (set WHATSAPP_TOKEN in .env for real delivery)";
+});
+bubble("Namaste! 🙏 Main RaipurNetra Traffic Bot hoon — WhatsApp par aapka traffic saathi.\nPoochein: traffic, bus, parking, route, challan ya prediction.", false);
+</script>
+</body>
+</html>

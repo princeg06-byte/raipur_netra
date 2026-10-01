@@ -1,0 +1,18 @@
+services:
+  raipurnetra:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - RN_LOG_LEVEL=INFO
+      - WHATSAPP_TOKEN=${WHATSAPP_TOKEN:-}
+      - WHATSAPP_PHONE_NUMBER_ID=${WHATSAPP_PHONE_NUMBER_ID:-}
+      - WHATSAPP_VERIFY_TOKEN=${WHATSAPP_VERIFY_TOKEN:-raipurnetra-verify-2026}
+    volumes:
+      - reports:/app/reports
+      - uploads:/app/data/uploads
+    restart: unless-stopped
+
+volumes:
+  reports:
+  uploads:

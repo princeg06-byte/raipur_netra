@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RaipurNetra AI — Command Center</title>
+<link rel="stylesheet" href="vendor/leaflet/leaflet.css">
+<link rel="stylesheet" href="css/style.css?v=14">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='40' fill='%2338bdf8'/><circle cx='50' cy='50' r='16' fill='%230f172a'/></svg>">
+</head>
+<body>
+<header>
+  <div class="brand">
+    <div class="eye"></div>
+    <div>
+      <h1>RaipurNetra <span>AI</span></h1>
+      <p>The Intelligent Eye of Raipur · Raipur Police Commissionerate</p>
+    </div>
+  </div>
+  <div class="header-badges">
+    <span class="theme-switch" title="Interface theme">
+      <button class="theme-btn active" data-theme="dark" title="Dark mode">🌙</button>
+      <button class="theme-btn" data-theme="light" title="Light mode">☀️</button>
+      <button class="theme-btn" data-theme="crimson" title="Crimson white mode">🎯</button>
+    </span>
+    <span class="badge weather" id="badge-weather">Clear</span>
+    <span class="badge event hidden" id="badge-event">Event</span>
+    <span class="badge cams" id="badge-cams">12 cams</span>
+    <span class="badge clock" id="badge-clock">--:--:--</span>
+    <button class="btn emergency-btn" id="btn-emergency-panel">🚑 Emergency Corridor</button>
+  </div>
+</header>
+
+<div id="emergency-banner" class="hidden">
+  🚨 EMERGENCY GREEN CORRIDOR ACTIVE — <span id="em-text"></span>
+  <button class="btn small danger" id="btn-emergency-stop">Deactivate</button>
+</div>
+
+<nav id="tabs">
+  <button data-tab="command" class="active">Command Center</button>
+  <button data-tab="twin">Digital Twin</button>
+  <button data-tab="signals">Signals</button>
+  <button data-tab="anpr">ANPR &amp; e-Challan</button>
+  <button data-tab="vision">Video Detection</button>
+  <button data-tab="prediction">Prediction</button>
+  <button data-tab="transport">Transport</button>
+  <button data-tab="parking">Parking</button>
+  <button data-tab="rides">Ride Match</button>
+  <button data-tab="bot">TrafficGPT</button>
+  <button data-tab="analytics">Analytics</button>
+</nav>
+
+<main>
+  <!-- ================= COMMAND CENTER ================= -->
+  <section id="tab-command" class="tab active">
+    <div class="kpi-grid" id="kpi-grid"></div>
+    <div class="two-col">
+      <div class="card">
+        <h3>City Congestion — Live + 30-min AI Forecast</h3>
+        <canvas id="city-chart" style="width:100%;height:300px;display:block"></canvas>
+        <p class="muted small">Solid: live city congestion (mirrored from CCTV density) · Dashed: model forecast · axis auto-scales to live conditions</p>
+      </div>
+      <div class="card">
+        <h3>Predictive Alerts &amp; Preemptive Actions</h3>
+        <div id="alert-feed" class="feed"><p class="muted">Monitoring junctions…</p></div>
+        <h3 style="margin-top:14px">Enforcement Hotspot</h3>
+        <div id="hotspot-card" class="muted">Collecting…</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= DIGITAL TWIN ================= -->
+  <section id="tab-twin" class="tab">
+    <div class="twin-layout">
+      <div class="card map-card">
+        <h3>Raipur Digital Twin — Live City Mirror <span class="live-dot"></span>
+          <span class="row" style="float:right;margin:0">
+            <button class="btn small active" id="btn-view-svg">Schematic</button>
+            <button class="btn small" id="btn-view-map">🗺️ Real Map</button>
+          </span>
+        </h3>
+        <svg id="city-map" viewBox="0 0 1000 700" preserveAspectRatio="xMidYMid meet"></svg>
+        <div id="city-leaflet" class="hidden" style="height:520px;border-radius:10px;border:1px solid var(--line)"></div>
+        <div class="legend">
+          <span><i class="sw" style="background:#4ade80"></i>Clear</span>
+          <span><i class="sw" style="background:#facc15"></i>Moderate</span>
+          <span><i class="sw" style="background:#fb923c"></i>Heavy</span>
+          <span><i class="sw" style="background:#f87171"></i>Jam</span>
+          <span><i class="sw" style="background:#64748b"></i>Closed</span>
+          <span><i class="sw bus"></i>Bus</span>
+          <span><i class="sw amb"></i>Emergency</span>
+        </div>
+      </div>
+      <div class="card whatif-panel">
+        <h3>What-If Simulation</h3>
+        <p class="muted small">Test decisions virtually before deploying on real roads.</p>
+        <label>Close a road</label>
+        <div class="row">
+          <select id="wi-road"></select>
+          <button class="btn danger" id="btn-close-road">Close</button>
+          <button class="btn" id="btn-open-road">Reopen</button>
+        </div>
+        <label>Conditions</label>
+        <div class="row">
+          <button class="btn" id="btn-rain">🌧️ Toggle Rain</button>
+          <button class="btn" id="btn-event">🎪 Toggle Event Surge</button>
+        </div>
+        <label>Force signal mode</label>
+        <div class="row">
+          <select id="wi-junction"></select>
+          <select id="wi-mode">
+            <option value="">Adaptive (AI)</option>
+            <option value="fixed">Fixed timer (today's system)</option>
+          </select>
+          <button class="btn" id="btn-signal-mode">Apply</button>
+        </div>
+        <div class="row">
+          <button class="btn wide" id="btn-whatif-reset">↺ Reset Scenario</button>
+        </div>
+        <h3 style="margin-top:14px">Scenario Impact (AI forecast)</h3>
+        <div id="whatif-impact" class="muted small">Apply a change, then see the 30-min impact across the city.</div>
+        <button class="btn" id="btn-whatif-impact" style="margin-top:8px">Measure impact vs baseline</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= SIGNALS ================= -->
+  <section id="tab-signals" class="tab">
+    <div class="card">
+      <h3>Adaptive Signal Control — Layer 5 (ACT)</h3>
+      <p class="muted small">Green time = f(vehicle_count, queue_length, waiting_time, adjacent_junction_state). Bus priority adds +12s green. Toggle any junction to fixed-timer to compare with today's system.</p>
+      <div class="table-wrap"><table id="signals-table">
+        <thead><tr><th>Junction</th><th>Mode</th><th>Phase</th><th>Green</th><th>Queue N-S</th><th>Queue E-W</th><th>Wait (AI)</th><th>Wait (fixed)</th><th>Saved</th><th>Switch</th></tr></thead>
+        <tbody></tbody>
+      </table></div>
+    </div>
+  </section>
+
+  <!-- ================= ANPR ================= -->
+  <section id="tab-anpr" class="tab">
+    <div class="kpi-grid" id="anpr-kpis"></div>
+    <div class="two-col">
+      <div class="card">
+        <h3>ANPR + Violation Heatmap (by junction)</h3>
+        <div id="heatmap"></div>
+        <div class="row" style="margin-top:10px">
+          <button class="btn" id="btn-burst">⚡ Simulate violation burst</button>
+        </div>
+        <h3 style="margin-top:14px">Plate lookup (post-OCR pipeline)</h3>
+        <div class="row">
+          <input id="plate-input" placeholder="CG-04-AB-1234">
+          <button class="btn" id="btn-lookup">Lookup RTO</button>
+        </div>
+        <div id="plate-result"></div>
+      </div>
+      <div class="card">
+        <h3>Live Detection Feed — YOLOv8 + ANPR</h3>
+        <div class="table-wrap"><table id="detections-table">
+          <thead><tr><th>Time</th><th>Camera</th><th>Plate</th><th>Type</th><th>Violation</th><th>Speed</th><th>Conf.</th></tr></thead>
+          <tbody></tbody>
+        </table></div>
+        <h3 style="margin-top:14px">Auto e-Challans</h3>
+        <div class="table-wrap"><table id="challans-table">
+          <thead><tr><th>ID</th><th>Plate</th><th>Owner</th><th>Violation</th><th>Fine</th><th>Status</th></tr></thead>
+          <tbody></tbody>
+        </table></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= VIDEO DETECTION ================= -->
+  <section id="tab-vision" class="tab">
+    <div class="two-col">
+      <div class="card">
+        <h3>Saved-Video Detection — real YOLOv8 / OpenCV pipeline <span class="live-dot" id="vision-live"></span></h3>
+        <p class="muted small">Upload any traffic video (CCTV export, drone, dashcam). The engine auto-selects
+        the fine-tuned Raipur YOLOv8 model, stock COCO, or an OpenCV MOG2 tracking pipeline — then counts,
+        classifies, tracks speeds, detects stop-line crossings and feeds the ANPR/e-challan engine.</p>
+        <div class="row">
+          <input type="file" id="vision-file" accept="video/*">
+          <button class="btn" id="btn-vision-upload">Process Video</button>
+        </div>
+        <div class="row">
+          <button class="btn secondary" id="btn-vision-sample">▶ Use bundled sample clip</button>
+          <button class="btn danger" id="btn-vision-stop">■ Stop</button>
+        </div>
+        <div style="position:relative;text-align:center;background:var(--map-bg);border-radius:10px;border:1px solid var(--line);min-height:300px">
+          <img id="vision-frame" style="max-width:100%;max-height:480px;display:none" alt="annotated frames appear here">
+          <p id="vision-placeholder" class="muted" style="padding:60px 20px">No video processed yet — load the sample clip or upload your own.</p>
+        </div>
+      </div>
+      <div>
+        <div class="card">
+          <h3>Detection Engine</h3>
+          <div id="vision-stats"></div>
+        </div>
+        <div class="card">
+          <h3>Bind to junction (live feed override)</h3>
+          <p class="muted small">Binds the video-measured congestion to a junction — signals, predictions and
+          the twin then react to REAL footage instead of the simulated feed. This is the exact hand-off path
+          to a production RTSP camera.</p>
+          <div class="row">
+            <select id="vision-junction"></select>
+            <button class="btn" id="btn-vision-bind">Bind</button>
+            <button class="btn secondary" id="btn-vision-unbind">Unbind</button>
+          </div>
+          <div id="vision-bind-state" class="muted small"></div>
+        </div>
+        <div class="card">
+          <h3>Stop-line Violations &amp; Plates</h3>
+          <div class="table-wrap"><table id="vision-events">
+            <thead><tr><th>Time</th><th>Track</th><th>Class</th><th>Plate</th><th>OCR</th><th>Speed</th></tr></thead>
+            <tbody></tbody>
+          </table></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= PREDICTION ================= -->
+  <section id="tab-prediction" class="tab">
+    <div class="card" id="model-card"></div>
+    <div class="card-grid" id="prediction-grid"></div>
+  </section>
+
+  <!-- ================= TRANSPORT ================= -->
+  <section id="tab-transport" class="tab">
+    <div class="card">
+      <h3>Live Bus Tracking — Layer 4 (TELL)</h3>
+      <p class="muted small">GPS-tracked city buses · live ETA · schedule adherence · signal priority active at junctions</p>
+      <div class="row" id="route-filter">
+        <button class="btn small active" data-route="all">All</button>
+        <button class="btn small" data-route="R1">R1 GE Road</button>
+        <button class="btn small" data-route="R2">R2 City Loop</button>
+        <button class="btn small" data-route="R3">R3 North-South</button>
+      </div>
+      <div class="table-wrap"><table id="bus-table">
+        <thead><tr><th>Bus</th><th>Route</th><th>Position</th><th>Next Stop</th><th>ETA</th><th>Delay</th><th>Occupancy</th><th>Speed</th></tr></thead>
+        <tbody></tbody>
+      </table></div>
+    </div>
+  </section>
+
+  <!-- ================= PARKING ================= -->
+  <section id="tab-parking" class="tab">
+    <div class="card">
+      <h3>Smart Parking — CV occupancy on existing CCTV</h3>
+      <p class="muted small">Live slot detection at Magneto Mall, City Center Mall, Pandri Market, Ambedkar Hospital, Railway Station</p>
+      <div class="card-grid" id="parking-grid"></div>
+    </div>
+  </section>
+
+  <!-- ================= RIDES ================= -->
+  <section id="tab-rides" class="tab">
+    <div class="two-col">
+      <div class="card">
+        <h3>Register for Ride Matching</h3>
+        <p class="muted small">Daily commuters on similar routes are matched automatically (WhatsApp-native in production).</p>
+        <label>Name</label><input id="ride-name" placeholder="Your name">
+        <label>Contact</label><input id="ride-contact" placeholder="98271-XXXXX">
+        <label>From</label><select id="ride-origin"></select>
+        <label>To</label><select id="ride-dest"></select>
+        <label>Time</label><input id="ride-time" type="time" value="09:00">
+        <label>Preference</label>
+        <select id="ride-gender"><option value="any">Anyone</option><option value="female">Female co-travelers only</option></select>
+        <button class="btn wide" id="btn-ride-register" style="margin-top:12px">Register &amp; Find Matches</button>
+        <div id="ride-match-result"></div>
+      </div>
+      <div class="card">
+        <h3>Registered Commuters</h3>
+        <div class="table-wrap"><table id="rides-table">
+          <thead><tr><th>ID</th><th>Name</th><th>From</th><th>To</th><th>Time</th></tr></thead>
+          <tbody></tbody>
+        </table></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= BOT ================= -->
+  <section id="tab-bot" class="tab">
+    <div class="bot-layout">
+      <div class="card chat-card">
+        <div class="chat-head">
+          <div class="wa-avatar">R</div>
+          <div><b>RaipurNetra Traffic Bot</b><br><span class="muted small">online · Hindi + English · WhatsApp-native</span></div>
+        </div>
+        <div id="chat" class="chat-body"></div>
+        <div id="chat-suggestions" class="chat-suggestions"></div>
+        <div class="chat-input">
+          <input id="chat-msg" placeholder='Try: "Jaistambh traffic kaisa hai?" या "Bus 7 kab aayegi?"'>
+          <button class="btn send" id="btn-send">➤</button>
+        </div>
+      </div>
+      <div class="card">
+        <h3>What the bot answers (live data)</h3>
+        <ul class="bot-cap">
+          <li>🚦 Traffic status of any junction — "Jaistambh Chowk traffic kaisa hai?"</li>
+          <li>🛣️ Fastest route + alternates — "Jaistambh se Telibandha"</li>
+          <li>🚌 Bus ETA — "Bus 7 kab aayegi?" / "बस 2 कब आएगी?"</li>
+          <li>🅿️ Parking — "Magneto Mall parking?"</li>
+          <li>🚗 Ride matching — "Main daily 9am Pandri se VIP Road jaata hoon"</li>
+          <li>🧾 e-Challans — "Aaj ke challan stats" / plate lookup</li>
+          <li>🔮 Prediction — "Kal Republic Day hai, traffic ka kya hoga?"</li>
+          <li>🚑 Emergency corridor status</li>
+        </ul>
+        <h3 style="margin-top:14px">📲 Link to real WhatsApp</h3>
+        <p class="muted small">This exact bot is exposed as a Meta WhatsApp Cloud API webhook.
+        Open the WhatsApp simulator to see the production message flow (webhook → TrafficGPT → reply),
+        or connect a real number in minutes — see README → WhatsApp Integration.</p>
+        <a class="btn" style="text-decoration:none;display:inline-block" href="/whatsapp_sim.html" target="_blank">💬 Open WhatsApp Simulator</a>
+        <div id="wa-config-state" class="muted small" style="margin-top:8px"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= ANALYTICS ================= -->
+  <section id="tab-analytics" class="tab">
+    <div class="kpi-grid" id="analytics-kpis"></div>
+    <div class="card">
+      <h3>Expected Impact — Before vs After RaipurNetra AI</h3>
+      <div class="table-wrap"><table id="impact-table">
+        <thead><tr><th>Metric</th><th>Current State</th><th>After RaipurNetra AI</th><th>Improvement</th></tr></thead>
+        <tbody></tbody>
+      </table></div>
+    </div>
+    <div class="two-col">
+      <div class="card">
+        <h3>Self-Sustaining Revenue Model</h3>
+        <div id="revenue-card"></div>
+      </div>
+      <div class="card">
+        <h3>Auto-Generated Reports</h3>
+        <p class="muted small">Daily/weekly reports for police administration — auto-generated by the Intelligence layer.</p>
+        <button class="btn" id="btn-report">Generate Daily Report</button>
+        <div id="report-result" class="muted small"></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  Raipur Traffic Hackathon 2026 · Theme: Infusion of AI/IoT in Traffic Management ·
+  Team: Akshita, Pratik Raj, Ayush Kumar, Prince · Raipur Police Commissionerate | IEI CG State Centre | NIT Raipur
+</footer>
+
+<script src="vendor/leaflet/leaflet.js"></script>
+<script src="js/charts.js?v=14"></script>
+<script src="js/map.js?v=14"></script>
+<script src="js/bot.js?v=14"></script>
+<script src="js/vision.js?v=14"></script>
+<script src="js/app.js?v=14"></script>
+</body>
+</html>
+
